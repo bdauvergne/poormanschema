@@ -61,6 +61,8 @@ ISO8601_DATE = RE(r'^\d+-\d+-\d+$')
 
 ISO8601_TIME = RE(r'\d+:\d+:\d+(?:\.\d+)?$')
 
+BASE64 = RE('^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$', msg='is not base64')
+
 
 def NORMALIZE(schema, converter):
     def f(data, path):
@@ -154,6 +156,7 @@ if __name__ == '__main__':
             'c': RE('^a*$'),
             'd': ISO8601_DATE,
             'e': ISO8601_TIME,
+            'f': BASE64,
         }
     ]
 
@@ -170,6 +173,7 @@ if __name__ == '__main__':
 
     tryit(1, schema)
     tryit([], schema, fail=False)
+    tryit([{'f': 'x'}], schema)
     tryit([{'a': 1}], schema, fail=False)
     tryit([{'a': 1, 'd': '1023-02-02', 'e': '12:12:12'}], schema, fail=False)
     tryit([{'a': None}], schema, fail=False)
