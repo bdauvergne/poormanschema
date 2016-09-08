@@ -55,7 +55,11 @@ def RE(regexp, repl=None, count=0, flags=0):
             return data
     return f
 
-ISO8601 = RE(r'\d+-\d+-\d+T\d+:\d+:\d+(\.\d+)?(Z|\d+:\d+)?$')
+ISO8601_DATETIME = RE(r'^\d+-\d+-\d+T\d+:\d+:\d+(?:\.\d+)?(?:Z|\d+:\d+)?$')
+
+ISO8601_DATE = RE(r'^\d+-\d+-\d+$')
+
+ISO8601_TIME = RE(r'\d+:\d+:\d+(?:\.\d+)?$')
 
 
 def NORMALIZE(schema, converter):
@@ -63,6 +67,27 @@ def NORMALIZE(schema, converter):
         data = check(data, schema, path)
         return converter(data)
     return f
+
+
+def __parse_datetime(data):
+    import isodate
+    return isodate.parse_datetime(data)
+
+
+def __parse_date(data):
+    import isodate
+    return isodate.parse_date(data)
+
+
+def __parse_time(data):
+    import isodate
+    return isodate.parse_time(data)
+
+DATETIME = NORMALIZE(ISO8601_DATETIME, __parse_datetime)
+
+DATE = NORMALIZE(ISO8601_DATE, __parse_date)
+
+TIME = NORMALIZE(ISO8601_TIME, __parse_time)
 
 STRIP = NORMALIZE(basestring, lambda s: s.strip())
 
@@ -121,25 +146,32 @@ def check1(data, schema, path=''):
         assert isinstance(data, t), '%s should be of type "%s"' % (path, t.__name__)
         return data
 
-schema = [{'a': MANDATORY(OR(None, int, OR(STRIP, ISO8601))), 'b': str, 'c': RE('^a*$')}]
-
-
-def tryit(a, b, fail=True):
-    try:
-        return check(a, b)
-    except ValueError, e:
-        print e
-        if not fail:
-            raise
-    else:
-        if fail:
-            raise Exception('it dit not fail %s %s' % (a, b))
-
-
 if __name__ == '__main__':
+    schema = [
+        {
+            'a': MANDATORY(OR(None, int, OR(STRIP, ISO8601_DATETIME))),
+            'b': str,
+            'c': RE('^a*$'),
+            'd': ISO8601_DATE,
+            'e': ISO8601_TIME,
+        }
+    ]
+
+    def tryit(a, b, fail=True):
+        try:
+            return check(a, b)
+        except ValueError, e:
+            print e
+            if not fail:
+                raise
+        else:
+            if fail:
+                raise Exception('it dit not fail %s %s' % (a, b))
+
     tryit(1, schema)
     tryit([], schema, fail=False)
     tryit([{'a': 1}], schema, fail=False)
+    tryit([{'a': 1, 'd': '1023-02-02', 'e': '12:12:12'}], schema, fail=False)
     tryit([{'a': None}], schema, fail=False)
     print tryit([{'a': ' 2016-12-01T09:34:34 '}], schema, fail=False)
     tryit([{'a': 1, 'b': 2, 'c': 'b'}], schema)
