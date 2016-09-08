@@ -124,21 +124,24 @@ def check1(data, schema, path=''):
         assert isinstance(data, dict), '%s should be a dict' % path
         if len(schema):
             mandatory_keys = [key for key in schema if hasattr(schema.get(key), 'mandatory')]
-            assert set(data.keys()) <= set(schema.keys()), (
-                '%s keys(%s) are not a subset of %s' % (path, ', '.join(sorted(data.keys())),
-                                                        ', '.join(sorted(schema.keys))))
-            assert set(mandatory_keys) <= set(data.keys()), (
-                '%s keys(==%s) are not a superset of %s' % (path, ', '.join(sorted(data.keys())),
-                                                            ', '.join(sorted(mandatory_keys))))
             errors = []
+            if not (set(data.keys()) <= set(schema.keys())):
+                errors.append('%s keys(%s) are not a subset of %s'
+                              % (path, ', '.join(sorted(data.keys())),
+                                 ', '.join(sorted(schema.keys))))
+            if not (set(mandatory_keys) <= set(data.keys())):
+                errors.append('%s keys(==%s) are not a superset of %s'
+                              % (path, ', '.join(sorted(data.keys())),
+                                 ', '.join(sorted(mandatory_keys))))
             d = {}
             for key in data:
-                try:
-                    d[key] = check(data[key], schema[key], path + '{%s}' % key)
-                except ValueError, e:
-                    errors.append(e)
+                if key in schema:
+                    try:
+                        d[key] = check(data[key], schema[key], path + '{%s}' % key)
+                    except ValueError, e:
+                        errors.append(e.args[0])
             if errors:
-                raise ValueError(' and '.join(error.args[0] for error in errors))
+                raise ValueError(' and '.join(error for error in errors))
             return d
         return data
     elif isinstance(schema, basestring):
