@@ -42,13 +42,13 @@ def MANDATORY(schema):
     return f
 
 
-def RE(regexp, repl=None, count=0, flags=0):
+def RE(regexp, repl=None, count=0, flags=0, msg=None):
     pattern = regexp if hasattr(regexp, 'match') else re.compile(regexp, flags=flags)
 
     def f(data, path):
         assert isinstance(data, basestring), '%s should be a basestring' % path
-        assert pattern.match(data), '%s(=="%s") does not match /%s/' % (
-            path, data[:100], regexp)
+        assert pattern.match(data), '%s(=="%s") %s' % (
+            path, data[:100], msg or 'does not match /%s/' % regexp)
         if repl:
             return pattern.sub(repl, data, count=count)
         else:
